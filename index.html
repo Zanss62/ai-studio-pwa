@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Studio AI Generatif</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <!-- LINK PWA MANIFEST -->
+    <link rel="manifest" href="./manifest.json">
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #10b981;
+            --bg-dark: #1f2937;
+            --card-bg: #374151;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f3f4f6;
+            min-height: 100vh;
+        }
+        .tab-button.active {
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid #4b5563;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+        }
+        .btn-primary {
+            background-color: var(--secondary-color);
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #059669;
+        }
+        .input-style {
+            background-color: #4b5563;
+            border: 1px solid #6b7280;
+            color: white;
+        }
+        .loader {
+            border-top-color: #fff;
+            -webkit-animation: spinner 1s linear infinite;
+            animation: spinner 1s linear infinite;
+        }
+        @-webkit-keyframes spinner {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-extrabold mb-6 text-center text-white">Studio AI Generatif: Gambar & Video</h1>
+
+        <!-- Tab Navigation -->
+        <div class="flex justify-center mb-8 p-1 card rounded-xl">
+            <button id="tab-t2i" onclick="showTab('t2i')" class="tab-button active flex-1 py-3 px-4 rounded-lg font-medium transition-all">Text ke Gambar</button>
+            <button id="tab-i2v" onclick="showTab('i2v')" class="tab-button flex-1 py-3 px-4 rounded-lg font-medium transition-all">Gambar ke Video (Simulasi)</button>
+            <button id="tab-t2v" onclick="showTab('t2v')" class="tab-button flex-1 py-3 px-4 rounded-lg font-medium transition-all">Text ke Video (Simulasi)</button>
+        </div>
+
+        <!-- TABS CONTENT -->
+
+        <!-- 1. Text to Image (Real API - Imagen) -->
+        <div id="t2i-tab" class="tab-content">
+            <div class="card p-6 rounded-xl">
+                <h2 class="text-2xl font-bold mb-4 text-center text-white">Text ke Gambar (T2I)</h2>
+                <div class="space-y-4">
+                    <!-- Prompt Input -->
+                    <div>
+                        <label for="t2i-prompt" class="block text-sm font-medium mb-1">Prompt Deskripsi Gambar (Detail)</label>
+                        <textarea id="t2i-prompt" class="w-full p-3 h-24 rounded-lg input-style" placeholder="Contoh: seekor kucing cyborg di atas motor yang melayang, gaya sinematik, pencahayaan dramatis, 8k."></textarea>
+                    </div>
+
+                    <!-- Settings -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="t2i-aspect-ratio" class="block text-sm font-medium mb-1">Aspek Rasio</label>
+                            <select id="t2i-aspect-ratio" class="w-full p-3 rounded-lg input-style">
+                                <option value="1024x1024">1:1 (Kotak)</option>
+                                <option value="1536x864" selected>16:9 (Lanskap)</option>
+                                <option value="864x1536">9:16 (Vertikal)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="t2i-resolution" class="block text-sm font-medium mb-1">Resolusi (Simulasi Kualitas)</label>
+                            <select id="t2i-resolution" class="w-full p-3 rounded-lg input-style">
+                                <option value="SD">SD (Standard)</option>
+                                <option value="HD" selected>HD (High Definition)</option>
+                                <option value="2K">2K</option>
+                                <option value="4K">4K</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="t2i-quantity" class="block text-sm font-medium mb-1">Jumlah Gambar (Maks 4)</label>
+                            <input type="number" id="t2i-quantity" class="w-full p-3 rounded-lg input-style" value="1" min="1" max="4" onchange="this.value=Math.min(Math.max(parseInt(this.value)||1, 1), 4)">
+                        </div>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button onclick="generateImage()" id="t2i-generate-btn" class="btn-primary w-full py-3 rounded-xl font-bold text-lg flex items-center justify-center disabled:opacity-50" disabled>
+                        <span id="t2i-btn-text">Hasilkan Gambar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="mt-8">
+                <h3 class="text-xl font-semibold mb-4 text-white">Hasil Gambar</h3>
+                <div id="t2i-results" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 min-h-[100px]">
+                    <div id="t2i-placeholder" class="col-span-full text-center p-8 border-2 border-dashed border-gray-600 rounded-xl text-gray-400">
+                        Hasil gambar akan muncul di sini.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Image to Video (Simulated) -->
+        <div id="i2v-tab" class="tab-content hidden">
+            <div class="card p-6 rounded-xl">
+                <h2 class="text-2xl font-bold mb-4 text-center text-white">Gambar ke Video (I2V) - Simulasi</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Sumber Gambar</label>
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <button id="i2v-use-t2i-btn" onclick="useLastT2IResult()" class="flex-1 py-3 px-4 rounded-lg font-bold text-sm bg-indigo-500 hover:bg-indigo-600 transition-colors disabled:opacity-50" disabled>
+                                Gunakan Hasil T2I Terakhir
+                            </button>
+                            <!-- Input File for Mobile -->
+                            <label for="i2v-upload-image" class="flex-1 py-3 px-4 rounded-lg font-bold text-sm bg-indigo-500 hover:bg-indigo-600 transition-colors cursor-pointer text-center">
+                                Unggah Gambar Baru
+                            </label>
+                            <input type="file" id="i2v-upload-image" accept="image/*" class="hidden" onchange="previewUploadedImage(event)">
+                        </div>
+                        <div id="i2v-image-preview" class="mt-4 p-3 rounded-lg border border-gray-600 text-center text-gray-400">
+                            Pilih gambar di atas atau gunakan hasil T2I.
+                        </div>
+                    </div>
+
+                    <!-- Settings -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label for="i2v-duration" class="block text-sm font-medium mb-1">Durasi</label>
+                            <select id="i2v-duration" class="w-full p-3 rounded-lg input-style">
+                                <option value="5s">5 detik</option>
+                                <option value="10s" selected>10 detik</option>
+                                <option value="30s">30 detik</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="i2v-aspect-ratio" class="block text-sm font-medium mb-1">Aspek Rasio</label>
+                            <select id="i2v-aspect-ratio" class="w-full p-3 rounded-lg input-style">
+                                <option value="9:16">9:16 (Reels/Shorts)</option>
+                                <option value="16:9" selected>16:9 (YouTube)</option>
+                                <option value="1:1">1:1 (Kotak)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="i2v-resolution" class="block text-sm font-medium mb-1">Resolusi</label>
+                            <select id="i2v-resolution" class="w-full p-3 rounded-lg input-style">
+                                <option value="HD" selected>HD (1080p)</option>
+                                <option value="2K">2K (Quad HD)</option>
+                                <option value="4K">4K (Ultra HD)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="i2v-quantity" class="block text-sm font-medium mb-1">Jumlah Video</label>
+                            <input type="number" id="i2v-quantity" class="w-full p-3 rounded-lg input-style" value="1" min="1" max="8" onchange="this.value=Math.min(Math.max(parseInt(this.value)||1, 1), 8)">
+                        </div>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button onclick="generateVideo('i2v')" id="i2v-generate-btn" class="btn-primary w-full py-3 rounded-xl font-bold text-lg flex items-center justify-center disabled:opacity-50" disabled>
+                        <span id="i2v-btn-text">Hasilkan Video (Simulasi)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="mt-8">
+                <h3 class="text-xl font-semibold mb-4 text-white">Hasil Video (Simulasi)</h3>
+                <div id="i2v-results" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 min-h-[100px]">
+                    <div id="i2v-placeholder" class="col-span-full text-center p-8 border-2 border-dashed border-gray-600 rounded-xl text-gray-400">
+                        Hasil simulasi video I2V akan muncul di sini.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Text to Video (Simulated) -->
+        <div id="t2v-tab" class="tab-content hidden">
+            <div class="card p-6 rounded-xl">
+                <h2 class="text-2xl font-bold mb-4 text-center text-white">Text ke Video (T2V) - Simulasi</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="t2v-prompt" class="block text-sm font-medium mb-1">Prompt Deskripsi Adegan (Detail)</label>
+                        <textarea id="t2v-prompt" class="w-full p-3 h-24 rounded-lg input-style" placeholder="Contoh: Adegan film dari kota cyberpunk di malam hari dengan hujan deras dan lampu neon terang, kamera bergerak perlahan maju."></textarea>
+                    </div>
+
+                    <!-- Settings -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label for="t2v-duration" class="block text-sm font-medium mb-1">Durasi</label>
+                            <select id="t2v-duration" class="w-full p-3 rounded-lg input-style">
+                                <option value="5s">5 detik</option>
+                                <option value="10s" selected>10 detik</option>
+                                <option value="15s">15 detik</option>
+                                <option value="custom">Kustom (Maks 60s)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="t2v-aspect-ratio" class="block text-sm font-medium mb-1">Aspek Rasio</label>
+                            <select id="t2v-aspect-ratio" class="w-full p-3 rounded-lg input-style">
+                                <option value="16:9" selected>16:9 (Lanskap)</option>
+                                <option value="9:16">9:16 (Vertikal)</option>
+                                <option value="1:1">1:1 (Kotak)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="t2v-resolution" class="block text-sm font-medium mb-1">Resolusi</label>
+                            <select id="t2v-resolution" class="w-full p-3 rounded-lg input-style">
+                                <option value="HD" selected>HD (1080p)</option>
+                                <option value="2K">2K (Quad HD)</option>
+                                <option value="4K">4K (Ultra HD)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="t2v-quantity" class="block text-sm font-medium mb-1">Jumlah Video</label>
+                            <input type="number" id="t2v-quantity" class="w-full p-3 rounded-lg input-style" value="1" min="1" max="8" onchange="this.value=Math.min(Math.max(parseInt(this.value)||1, 1), 8)">
+                        </div>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button onclick="generateVideo('t2v')" id="t2v-generate-btn" class="btn-primary w-full py-3 rounded-xl font-bold text-lg flex items-center justify-center disabled:opacity-50" disabled>
+                        <span id="t2v-btn-text">Hasilkan Video (Simulasi)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="mt-8">
+                <h3 class="text-xl font-semibold mb-4 text-white">Hasil Video (Simulasi)</h3>
+                <div id="t2v-results" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 min-h-[100px]">
+                    <div id="t2v-placeholder" class="col-span-full text-center p-8 border-2 border-dashed border-gray-600 rounded-xl text-gray-400">
+                        Hasil simulasi video T2V akan muncul di sini.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript LOGIC -->
+    <script>
+        // API Key for Imagen Model (Leave as empty string)
+        const apiKey = ""; 
+        const IMAGEN_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+
+        let lastGeneratedImage = null; // Store last T2I result for I2V tab
+
+        // --- PWA Service Worker Registration ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(registration => console.log('SW registered: ', registration.scope))
+                    .catch(error => console.log('SW registration failed: ', error));
+            });
+        }
+        
+        // --- Tab Switching Logic ---
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            document.getElementById(`${tabId}-tab`).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            // Update I2V button status when switching
+            if (tabId === 'i2v') {
+                updateI2VButtonStatus();
+            }
+        }
+        
+        // --- Initialization and Validation ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial button validation for T2I
+            const t2iPrompt = document.getElementById('t2i-prompt');
+            const t2iGenerateBtn = document.getElementById('t2i-generate-btn');
+            
+            const validateT2I = () => {
+                t2iGenerateBtn.disabled = t2iPrompt.value.trim().length < 10; // Require at least 10 characters
+            };
+            
+            t2iPrompt.addEventListener('input', validateT2I);
+            
+            // Initial button validation for T2V
+            const t2vPrompt = document.getElementById('t2v-prompt');
+            const t2vGenerateBtn = document.getElementById('t2v-generate-btn');
+            
+            const validateT2V = () => {
+                t2vGenerateBtn.disabled = t2vPrompt.value.trim().length < 10;
+            };
+            
+            t2vPrompt.addEventListener('input', validateT2V);
+
+            // Initial button validation for I2V (will be done by updateI2VButtonStatus)
+            const i2vUploadImage = document.getElementById('i2v-upload-image');
+            i2vUploadImage.addEventListener('change', updateI2VButtonStatus);
+        });
+
+        // --- I2V State Management ---
+        function updateI2VButtonStatus() {
+            const i2vGenerateBtn = document.getElementById('i2v-generate-btn');
+            const i2vUseT2iBtn = document.getElementById('i2v-use-t2i-btn');
+            const uploadedImage = document.getElementById('i2v-upload-image').files.length > 0;
+            
+            // Enable/disable 'Use T2I Result' button
+            if (lastGeneratedImage) {
+                i2vUseT2iBtn.disabled = false;
+                i2vUseT2iBtn.classList.remove('opacity-50');
+            } else {
+                i2vUseT2iBtn.disabled = true;
+                i2vUseT2iBtn.classList.add('opacity-50');
+            }
+
+            // Enable/disable 'Generate Video' button
+            if (lastGeneratedImage || uploadedImage) {
+                i2vGenerateBtn.disabled = false;
+                i2vGenerateBtn.classList.remove('opacity-50');
+            } else {
+                i2vGenerateBtn.disabled = true;
+                i2vGenerateBtn.classList.add('opacity-50');
+            }
+        }
+
+        function previewUploadedImage(event) {
+            const previewDiv = document.getElementById('i2v-image-preview');
+            previewDiv.innerHTML = '';
+            
+            const file = event.target.files[0];
+            if (file) {
+                lastGeneratedImage = null; // Clear T2I result if new image uploaded
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'w-full h-auto object-contain rounded-lg max-h-60';
+                    previewDiv.appendChild(img);
+                    updateI2VButtonStatus();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewDiv.innerHTML = 'Pilih gambar di atas atau gunakan hasil T2I.';
+            }
+            updateI2VButtonStatus();
+        }
+
+        function useLastT2IResult() {
+            if (lastGeneratedImage) {
+                const previewDiv = document.getElementById('i2v-image-preview');
+                previewDiv.innerHTML = '';
+                
+                // Clear file input
+                document.getElementById('i2v-upload-image').value = ''; 
+                
+                const img = document.createElement('img');
+                img.src = lastGeneratedImage;
+                img.className = 'w-full h-auto object-contain rounded-lg max-h-60 border-2 border-secondary-color';
+                previewDiv.innerHTML = '<p class="text-sm text-secondary-color mb-2">Menggunakan hasil T2I terakhir</p>';
+                previewDiv.appendChild(img);
+                
+                updateI2VButtonStatus();
+            } else {
+                console.error("No last T2I result found.");
+            }
+        }
+
+        // --- Utility Functions ---
+
+        // Exponential backoff for API calls
+        async function fetchWithRetry(url, options, maxRetries = 5) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status === 429 && i < maxRetries - 1) {
+                        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`API Error: ${response.status} - ${errorData.error.message}`);
+                    }
+                    return response;
+                } catch (error) {
+                    if (i === maxRetries - 1) throw error;
+                    // Exponential backoff handled in 429 check above
+                }
+            }
+        }
+
+        // --- Real T2I Generation (Imagen) ---
+        async function generateImage() {
+            const prompt = document.getElementById('t2i-prompt').value.trim();
+            const aspectRatio = document.getElementById('t2i-aspect-ratio').value;
+            const quantity = parseInt(document.getElementById('t2i-quantity').value);
+            const resultsDiv = document.getElementById('t2i-results');
+            const generateBtn = document.getElementById('t2i-generate-btn');
+            const btnText = document.getElementById('t2i-btn-text');
+            
+            if (prompt.length < 10) return;
+
+            // UI Feedback: Start Loading
+            generateBtn.disabled = true;
+            btnText.innerHTML = '<div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-6 w-6 mr-3"></div>Menghasilkan...';
+            resultsDiv.innerHTML = '';
+            document.getElementById('t2i-placeholder')?.remove();
+
+            const [width, height] = aspectRatio.split('x').map(Number);
+
+            const payload = {
+                instances: {
+                    prompt: prompt,
+                    config: {
+                        imageSize: `${width}x${height}`,
+                        numberOfImages: quantity,
+                        // Simulated quality parameter via prompt guidance
+                        promptGuidance: 5.0 
+                    }
+                },
+                parameters: {
+                    sampleCount: quantity
+                }
+            };
+
+            try {
+                const response = await fetchWithRetry(IMAGEN_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                const predictions = result.predictions || [];
+                
+                if (predictions.length > 0) {
+                    lastGeneratedImage = null; // Reset for I2V if generation fails or is single
+                    
+                    predictions.forEach((prediction, index) => {
+                        const base64Data = prediction.bytesBase64Encoded;
+                        if (base64Data) {
+                            const imageUrl = `data:image/png;base64,${base64Data}`;
+                            
+                            // Set the last generated image for the I2V feature
+                            if (index === 0) {
+                                lastGeneratedImage = imageUrl;
+                            }
+                            
+                            const resultItem = document.createElement('div');
+                            resultItem.className = 'card rounded-xl overflow-hidden shadow-lg transform hover:scale-[1.02] transition-transform duration-300';
+                            
+                            resultItem.innerHTML = `
+                                <img src="${imageUrl}" alt="AI Generated Image" class="w-full h-auto object-cover" />
+                                <div class="p-3 text-center">
+                                    <p class="text-xs text-gray-400">(${index + 1}/${quantity}) - ${width}x${height}</p>
+                                    <button onclick="copyToClipboard('${imageUrl}')" class="text-xs mt-2 text-indigo-400 hover:text-indigo-300 transition-colors">Salin Data URL</button>
+                                </div>
+                            `;
+                            resultsDiv.appendChild(resultItem);
+                        }
+                    });
+
+                    // Update I2V button status
+                    updateI2VButtonStatus();
+
+                } else {
+                    resultsDiv.innerHTML = '<p class="text-red-400 col-span-full text-center p-4">Gagal menghasilkan gambar. Coba prompt yang berbeda.</p>';
+                    lastGeneratedImage = null;
+                }
+
+            } catch (error) {
+                console.error("Error during image generation:", error);
+                resultsDiv.innerHTML = '<p class="text-red-400 col-span-full text-center p-4">Terjadi kesalahan pada API: ' + error.message + '</p>';
+                lastGeneratedImage = null;
+            } finally {
+                // UI Feedback: Stop Loading
+                btnText.textContent = 'Hasilkan Gambar';
+                generateBtn.disabled = prompt.length < 10;
+            }
+        }
+        
+        // --- Simulated Video Generation (I2V/T2V) ---
+        function generateVideo(type) {
+            const resultsDiv = document.getElementById(`${type}-results`);
+            const generateBtn = document.getElementById(`${type}-generate-btn`);
+            const btnText = document.getElementById(`${type}-btn-text`);
+
+            const duration = document.getElementById(`${type}-duration`).value;
+            const aspectRatio = document.getElementById(`${type}-aspect-ratio`).value;
+            const resolution = document.getElementById(`${type}-resolution`).value;
+            const quantity = parseInt(document.getElementById(`${type}-quantity`).value);
+
+            let prompt = "";
+            if (type === 't2v') {
+                prompt = document.getElementById('t2v-prompt').value.trim();
+                if (prompt.length < 10) return;
+            } else if (type === 'i2v') {
+                if (!lastGeneratedImage && document.getElementById('i2v-upload-image').files.length === 0) return;
+                prompt = "Gambar ke Video (Simulasi)"; // Dummy prompt for I2V simulation
+            }
+
+            // UI Feedback: Start Loading
+            generateBtn.disabled = true;
+            btnText.innerHTML = '<div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-6 w-6 mr-3"></div>Memproses Video...';
+            resultsDiv.innerHTML = '';
+            document.getElementById(`${type}-placeholder`)?.remove();
+            
+            // Simulate processing time
+            const processingTime = 3000 + Math.random() * 5000; // 3 to 8 seconds
+
+            setTimeout(() => {
+                // Generate simulated video cards
+                for (let i = 0; i < quantity; i++) {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'card rounded-xl overflow-hidden shadow-lg p-4 transition-transform duration-300';
+                    
+                    let imageSource = "";
+                    if (type === 'i2v' && lastGeneratedImage) {
+                        // Use a fixed color block or placeholder for simulation
+                        imageSource = `<img src="${lastGeneratedImage}" alt="Input Frame" class="w-full h-auto object-cover rounded-lg mb-2 opacity-50"/>`;
+                    } else if (type === 't2v') {
+                        imageSource = `<div class="w-full h-32 bg-purple-700/50 rounded-lg flex items-center justify-center mb-2">
+                                           <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                       </div>`;
+                    } else {
+                         imageSource = `<div class="w-full h-32 bg-gray-700/50 rounded-lg flex items-center justify-center mb-2">
+                                           <p class="text-sm text-gray-400">Bingkai Video Simulasi</p>
+                                       </div>`;
+                    }
+
+                    resultItem.innerHTML = `
+                        ${imageSource}
+                        <h4 class="text-lg font-semibold text-white">${type === 't2v' ? 'Video T2V' : 'Video I2V'} #${i + 1}</h4>
+                        <p class="text-sm text-gray-400">Durasi: ${duration}, Rasio: ${aspectRatio}, Res: ${resolution}</p>
+                        <button onclick="showMessage('Simulasi video siap diunduh!')" class="btn-primary w-full py-2 mt-3 rounded-lg text-sm font-bold">
+                            Unduh (Simulasi)
+                        </button>
+                    `;
+                    resultsDiv.appendChild(resultItem);
+                }
+
+                // UI Feedback: Stop Loading
+                btnText.textContent = 'Hasilkan Video (Simulasi)';
+                generateBtn.disabled = false;
+                
+            }, processingTime);
+        }
+
+        // --- Message Box (Custom Alert) ---
+        function showMessage(message) {
+            const container = document.body;
+            let messageBox = document.getElementById('custom-message-box');
+
+            if (!messageBox) {
+                messageBox = document.createElement('div');
+                messageBox.id = 'custom-message-box';
+                messageBox.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 transition-opacity duration-300 opacity-0';
+                messageBox.innerHTML = `
+                    <div class="card p-6 rounded-xl max-w-sm w-full transform scale-90 transition-transform duration-300">
+                        <p id="message-text" class="text-white mb-4 text-center"></p>
+                        <button onclick="document.getElementById('custom-message-box').classList.add('opacity-0', 'scale-90'); setTimeout(() => document.getElementById('custom-message-box').remove(), 300);" 
+                            class="btn-primary w-full py-2 rounded-lg font-bold">Tutup</button>
+                    </div>
+                `;
+                container.appendChild(messageBox);
+                
+                // Animate in
+                setTimeout(() => {
+                    messageBox.classList.remove('opacity-0', 'scale-90');
+                }, 10);
+            }
+            document.getElementById('message-text').textContent = message;
+        }
+
+        // --- Clipboard Copy ---
+        function copyToClipboard(text) {
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                const message = successful ? 'URL data gambar berhasil disalin ke clipboard!' : 'Gagal menyalin URL.';
+                showMessage(message);
+            } catch (err) {
+                showMessage('Gagal menyalin: Browser tidak mendukung perintah salin langsung.');
+            }
+            document.body.removeChild(tempInput);
+        }
+    </script>
+</body>
+</html>
+
