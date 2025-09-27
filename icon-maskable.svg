@@ -1,0 +1,25 @@
+<svg width="512" height="512" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Latar belakang gelap (sesuai tema aplikasi) -->
+    <rect width="48" height="48" fill="#1f2937"/>
+    
+    <!-- Area aman Ikon (Maskable icons harus memiliki padding) -->
+    <g transform="translate(4 4) scale(0.83)">
+        <!-- Bentuk dasar chip / inti AI (Warna Primer: Ungu) -->
+        <rect x="7" y="7" width="34" height="34" rx="6" fill="#4f46e5" stroke="#10b981" stroke-width="2"/>
+        
+        <!-- Titik koneksi (Data Points) -->
+        <circle cx="15" cy="15" r="2" fill="white"/>
+        <circle cx="33" cy="15" r="2" fill="white"/>
+        <circle cx="15" cy="33" r="2" fill="white"/>
+        <circle cx="33" cy="33" r="2" fill="white"/>
+        
+        <!-- Garis data utama (Garis Tengah) -->
+        <path d="M24 12V36" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 24H36" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+        
+        <!-- Simbol Generatif (Kilatan Bintang) di Tengah -->
+        <circle cx="24" cy="24" r="4" fill="#f3f4f6"/>
+        <path d="M24 20L20 28L28 28L24 20Z" fill="#4f46e5"/>
+    </g>
+</svg>
+
